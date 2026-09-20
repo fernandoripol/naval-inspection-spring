@@ -1,27 +1,31 @@
-Markdown
+# ⚓ Naval Inspection Spring (`naval-inspection-spring`)
 
-# ⚓ Naval Inspection System (Spring Boot Edition)
-
-An enterprise-grade, interactive console application developed for the **Brazilian Navy** (Delegacia Fluvial de Furnas) to automate maritime inspection workflows, manage naval assets, and generate official operational reports. 
-
-Recently refactored from legacy vanilla Java to a modern **Spring Boot** architecture, this project demonstrates strong object-oriented principles, robust database integration, and scalable modular design.
+Enterprise backend system developed in **Spring Boot** to manage and automate naval inspection reports, strictly complying with the official regulatory layout of the **Brazilian Navy (Delegacia Fluvial de Furnas)**.
 
 ---
 
 ## 🚀 Key Architectural Highlights & Tech Stack
 * **Java 17**: Leveraging modern language features (records, enhanced pattern matching, and time APIs).
-* **Spring Boot 3.2.5**: Utilizing `CommandLineRunner` to orchestrate application lifecycle management, dependency injection (`@Service`), and component scanning.
-* **SQLite JDBC**: Integrated lightweight relational persistence with automated schema bootstrapping and robust error handling.
-* **Maven**: Clean build automation and structured dependency management adhering to standard project directory layouts.
+* **Spring Boot 3.2.5**: Enterprise application lifecycle management, automated component scanning, and robust dependency injection.
+* **Spring Web (REST API)**: Controllers exposing endpoints for remote inspection handling and integration.
+* **OpenPDF**: Advanced programmatic generation of immutable official PDF documents featuring exact structured tables, headers, and official footer signoffs.
+* **File Processing & Export**: Simultaneous, synchronized generation of structured PDF reports, editable CSV spreadsheets (compatible with LibreOffice/Excel), and operational TXT logs.
+* **Maven**: Clean build automation and structured dependency management adhering to standard enterprise project directory layouts (`src/main/java`).
 
 ---
 
 ## 🛠️ Core Business Modules & Features
+* **Official PDF & CSV Generation**: Automated creation of immutable PDF documents featuring precise institutional table layouts, alongside structured data export to CSV format.
 * **Vessel Inspection & Boarding Management**: Track vessel details, registration metadata, distinct vessel classes (*Moto Aquática, Esporte e Recreio, Balsa, Transporte de Passageiros*), infraction notices (*A.I.*), seizure records (*A.I.*), and legal custodians (*F.D.*).
 * **Military Staff Control**: Dynamic registration and role-based assignment of naval inspectors, crew members, military ranks, and credentials.
 * **Operational Chronology**: Flexible multi-day mission tracking to record events across extended patrols and changing geographical areas (*PIN*).
 * **Logistics & Reporting**: Real-time tracking of fuel consumption (gasoline and diesel) alongside automated formatting and generation of official operational reports.
-* **Interactive CLI Menu**: A comprehensive, bulletproof terminal interface featuring input validation and runtime configuration editing.
+* **Interactive CLI Menu & REST Endpoints**: A comprehensive terminal interface combined with REST controllers (`/api/inspections`) to handle operational commands locally or via remote triggers.
+
+---
+
+## 🌐 REST API Endpoints
+* **`POST /api/inspections`**: Receives remote inspection parameters, triggers business logic, and generates synchronized official reports directly on the server environment.
 
 ---
 
@@ -30,13 +34,12 @@ Recently refactored from legacy vanilla Java to a modern **Spring Boot** archite
 naval-inspection-spring/
 │
 ├── src/main/java/
-│   ├── application/        # Main Spring Boot starter & interactive console menu
+│   ├── application/        # Main Spring Boot starter, interactive CLI menu & REST Controllers
 │   ├── entities/           # Domain models (Vessel, Boarding, InspectionReport, Military Staff)
-│   ├── services/           # Business logic & SQLite persistence integration layer
+│   ├── services/           # Business logic & export orchestration layers
 │   └── exceptions/         # Custom domain exception handlers
 │
-├── lib/                    # External JDBC drivers
-├── pom.xml                 # Maven configuration & Spring Boot parent dependencies
+├── pom.xml                 # Maven configuration & Spring Boot / OpenPDF dependencies
 └── README.md
 
 ⚙️ How to Run Locally
