@@ -1,0 +1,60 @@
+=========================================================================================
+                                MARINHA DO BRASIL
+                         DELEGACIA FLUVIAL DE FURNAS
+                        RELATÓRIO DE INSPEÇÃO NAVAL
+=========================================================================================
+01) TAREFA ATRIBUÍDA: FISCALIZAÇÃO DO TRÁFEGO AQUAVIÁRIO
+02) DATA/PERÍODO: 20 de setembro de 2026. OMS: 333/2026
+    SAÍDA DA EQUIPE: 09:00 | RETORNO DA EQUIPE: 17:10
+
+03) CRONOLOGIA
+    DIA | DATA | PIN | OBSERVAÇÃO
+    OPERAÇÃO | 20/09/26 | LAGO DE FURNAS | -
+
+04) EMBARCAÇÕES FISCALIZADAS
+-----------------------------------------------------------------------------------------
+EMBARCAÇÃO         | Nº DE INSCRIÇÃO  | A.I  | A.A  | F.D  | CLASSE | DATA 
+-----------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+*MA (Moto aquática), E/R (Esporte e Recreio), T/C (Transporte de Carga), T/P (Passageiros)
+
+TOTAL        | MOTO-AQUÁTICA | ESPORTE E RECREIO | BALSA | TRANSPORTE PASSAGEIROS | DISPOSITIVO
+ABORDAGENS   | 0             | 0                 | 0     | 0                      | 0          
+NOTIFICAÇÕES | 0             | 0                 | 0     | 0                      | 0          
+APREENSÕES   | 0             | 0                 | 0     | 0                      | 0          
+
+05) MEIOS EMPREGADOS:
+    VIATURA: GMF7382 | EMBARCAÇÃO: ECST TENAZ
+
+06) MILITARES RESPONSÁVEIS:
+
+07) MARINAS/RAMPAS E PÍER:
+    XXX
+08) CONDIÇÕES METEOROLÓGICAS:
+    CLOUDY
+09) OCORRÊNCIAS:
+    INSPECTION
+10) OUTRAS IRREGULARIDADES:
+    XXX
+11) ACOMODAÇÕES:
+    XXXX
+12) FACILIDADES PARA ACESSO:
+    XXXX
+13) SUGESTÕES:
+    XXXX
+14) OUTRAS OBSERVAÇÕES:
+    XXX
+
+15) CLG:
+    Diesel: 0lts | Gasolina: 0lts
+
+-----------------------------------------------------------------------------------------
+RUBENS IKEUTI                          | ANDRE RAIMUNDO DA SILVA
+Capitão de Corveta                     | Primeiro-Tenente (AA)
+Delegado                               | Encarregado da Divisão STA
+
+FERNANDO RODRIGUES RIPOL
+3SG-CN
+Inspetor Naval
+=========================================================================================
+
