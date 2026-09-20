@@ -1,7 +1,21 @@
 package entities;
 
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import org.springframework.stereotype.Component;
+
+import java.awt.Color;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -137,41 +151,65 @@ public class InspectionReport implements Exportable {
 
     @Override
     public void generateReportFile() {
-        String fileName = "relatorio_inspecao.txt";
-        File file = new File(fileName);
-        
-        System.out.println("📁 Caminho absoluto do arquivo: " + file.getAbsolutePath());
-        
-        try (PrintWriter writer = new PrintWriter(file)) {
-            String depTimeStr = this.departureTime.format(FMT_TIME);
-            String retTimeStr = (this.returnTime == null) ? "17:10" : this.returnTime.format(FMT_TIME);
+        String dateStr = this.operationDate.format(DateTimeFormatter.ofPattern("dd_MM_yyyy"));
+        String dateFormatted = this.operationDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String depTimeStr = this.departureTime.format(FMT_TIME);
+        String retTimeStr = (this.returnTime == null) ? "17:10" : this.returnTime.format(FMT_TIME);
 
-            writer.println("=========================================================================================");
-            writer.println("                                MARINHA DO BRASIL");
-            writer.println("                         " + this.delegation.toUpperCase());
-            writer.println("                        RELATÓRIO DE INSPEÇÃO NAVAL");
-            writer.println("=========================================================================================");
-            
-            writer.println("01) TAREFA ATRIBUÍDA: FISCALIZAÇÃO DO TRÁFEGO AQUAVIÁRIO");
-            writer.println("02) DATA/PERÍODO: " + this.operationDate.format(FMT_EXTENDED_DATE) + ". OMS: " + this.oms);
-            writer.println("    SAÍDA DA EQUIPE: " + depTimeStr + " | RETORNO DA EQUIPE: " + retTimeStr);
-            
-            writer.println("\n03) CRONOLOGIA");
-            writer.println("    DIA | DATA | PIN | OBSERVAÇÃO");
+        String basePath = System.getProperty("user.dir");
+
+        // 1. Gerar PDF Oficial com Tabelas idênticas ao modelo da Marinha
+        String pdfFileName = "relatorio_inspecao_" + dateStr + ".pdf";
+        File pdfFile = new File(basePath, pdfFileName);
+        
+        Document document = new Document();
+        try {
+            PdfWriter.getInstance(document, new java.io.FileOutputStream(pdfFile));
+            document.open();
+
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.BLACK);
+            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.BLACK);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.BLACK);
+
+            Paragraph header = new Paragraph("MARINHA DO BRASIL\n" + this.delegation.toUpperCase() + "\nRELATÓRIO DE INSPEÇÃO NAVAL", titleFont);
+            header.setAlignment(Paragraph.ALIGN_CENTER);
+            document.add(header);
+            document.add(new Paragraph("----------------------------------------------------------------------------------------------------------------------------------", normalFont));
+
+            document.add(new Paragraph("01) TAREFA ATRIBUÍDA: FISCALIZAÇÃO DO TRÁFEGO AQUAVIÁRIO", boldFont));
+            document.add(new Paragraph("02) DATA/PERÍODO: " + dateFormatted + ". OMS: " + this.oms + "\n    SAÍDA DA EQUIPE: " + depTimeStr + " | RETORNO DA EQUIPE: " + retTimeStr, normalFont));
+
+            document.add(new Paragraph("\n03) CRONOLOGIA", boldFont));
+            PdfPTable cronTable = new PdfPTable(new float[]{3f, 2f, 3f, 4f});
+            cronTable.setWidthPercentage(100);
+            cronTable.addCell(new PdfPCell(new Phrase("DIA", boldFont)));
+            cronTable.addCell(new PdfPCell(new Phrase("DATA", boldFont)));
+            cronTable.addCell(new PdfPCell(new Phrase("PIN", boldFont)));
+            cronTable.addCell(new PdfPCell(new Phrase("OBSERVAÇÃO", boldFont)));
+
             if (chronologyDays.isEmpty()) {
-                writer.println("    OPERAÇÃO | " + this.operationDate.format(DateTimeFormatter.ofPattern("dd/MM/yy")) + " | " + this.operationLocation + " | -");
+                cronTable.addCell(new PdfPCell(new Phrase("OPERAÇÃO", normalFont)));
+                cronTable.addCell(new PdfPCell(new Phrase(dateFormatted, normalFont)));
+                cronTable.addCell(new PdfPCell(new Phrase(this.operationLocation, normalFont)));
+                cronTable.addCell(new PdfPCell(new Phrase("-", normalFont)));
             } else {
                 for (String[] day : chronologyDays) {
-                    writer.println("    " + day[0] + " | " + day[1] + " | " + day[2] + " | " + day[3]);
+                    cronTable.addCell(new PdfPCell(new Phrase(day[0], normalFont)));
+                    cronTable.addCell(new PdfPCell(new Phrase(day[1], normalFont)));
+                    cronTable.addCell(new PdfPCell(new Phrase(day[2], normalFont)));
+                    cronTable.addCell(new PdfPCell(new Phrase(day[3], normalFont)));
                 }
             }
-            
-            writer.println("\n04) EMBARCAÇÕES FISCALIZADAS");
-            writer.println("-----------------------------------------------------------------------------------------");
-            writer.printf(Locale.US, "%-18s | %-16s | %-4s | %-4s | %-4s | %-6s | %-5s\n", 
-                              "EMBARCAÇÃO", "Nº DE INSCRIÇÃO", "A.I", "A.A", "F.D", "CLASSE", "DATA");
-            writer.println("-----------------------------------------------------------------------------------------");
-            
+            document.add(cronTable);
+
+            document.add(new Paragraph("\n04) EMBARCAÇÕES FISCALIZADAS", boldFont));
+            PdfPTable embarcTable = new PdfPTable(new float[]{3f, 2.5f, 1f, 1f, 1f, 1.5f, 2f});
+            embarcTable.setWidthPercentage(100);
+            String[] headersEmb = {"EMBARCAÇÃO", "Nº INSCRIÇÃO", "A.I.", "A.A", "F.D.", "CLASSE", "DATA"};
+            for(String h : headersEmb) {
+                embarcTable.addCell(new PdfPCell(new Phrase(h, boldFont)));
+            }
+
             int maAb = 0, erAb = 0, tcAb = 0, tpAb = 0, efAb = 0;
             int maNot = 0, erNot = 0, tcNot = 0, tpNot = 0, efNot = 0;
             int maSei = 0, erSei = 0, tcSei = 0, tpSei = 0, efSei = 0;
@@ -179,85 +217,125 @@ public class InspectionReport implements Exportable {
             for (Boarding b : boardings) {
                 String classCode = b.getVessel().getVesselClass(); 
                 String upperClass = classCode.toUpperCase();
-                
-                writer.printf(Locale.US, "%-18s | %-16s | %-4s | %-4s | %-4s | %-6s | %-5s\n",
-                        b.getVessel().getName(),
-                        b.getVessel().getRegistration(),
-                        b.getInfractionNotice(),
-                        b.getSeizureRecord(),
-                        b.getLegalCustodian(),
-                        classCode,
-                        b.getFormattedDate());
+
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getVessel().getName(), normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getVessel().getRegistration(), normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getInfractionNotice(), normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getSeizureRecord(), normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getLegalCustodian(), normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(classCode, normalFont)));
+                embarcTable.addCell(new PdfPCell(new Phrase(b.getFormattedDate(), normalFont)));
 
                 if (upperClass.contains("M.A") || upperClass.contains("MOTO") || upperClass.contains("JET")) { 
-                    maAb++; 
-                    if(b.hasNotification()) maNot++; 
-                    if(b.hasSeizure()) maSei++; 
-                }
-                else if (upperClass.contains("E.R") || upperClass.contains("ESPORTE") || upperClass.contains("RECREIO")) { 
-                    erAb++; 
-                    if(b.hasNotification()) erNot++; 
-                    if(b.hasSeizure()) erSei++; 
-                }
-                else if (upperClass.contains("T.C") || upperClass.contains("CARGA") || upperClass.contains("BALSA")) { 
-                    tcAb++; 
-                    if(b.hasNotification()) tcNot++; 
-                    if(b.hasSeizure()) tcSei++; 
-                }
-                else if (upperClass.contains("T.P") || upperClass.contains("PASSAGEIRO")) { 
-                    tpAb++; 
-                    if(b.hasNotification()) tpNot++; 
-                    if(b.hasSeizure()) tpSei++; 
-                }
-                else { 
-                    efAb++; 
-                    if(b.hasNotification()) efNot++; 
-                    if(b.hasSeizure()) efSei++; 
+                    maAb++; if(b.hasNotification()) maNot++; if(b.hasSeizure()) maSei++; 
+                } else if (upperClass.contains("E.R") || upperClass.contains("ESPORTE") || upperClass.contains("RECREIO")) { 
+                    erAb++; if(b.hasNotification()) erNot++; if(b.hasSeizure()) erSei++; 
+                } else if (upperClass.contains("T.C") || upperClass.contains("CARGA") || upperClass.contains("BALSA")) { 
+                    tcAb++; if(b.hasNotification()) tcNot++; if(b.hasSeizure()) tcSei++; 
+                } else if (upperClass.contains("T.P") || upperClass.contains("PASSAGEIRO")) { 
+                    tpAb++; if(b.hasNotification()) tpNot++; if(b.hasSeizure()) tpSei++; 
+                } else { 
+                    efAb++; if(b.hasNotification()) efNot++; if(b.hasSeizure()) efSei++; 
                 }
             }
+            document.add(embarcTable);
+            document.add(new Paragraph("*MA (Moto aquática), E/R (Esporte e Recreio), T/C (Transporte de Carga), T/P (Passageiros)", normalFont));
 
-            writer.println("-----------------------------------------------------------------------------------------");
-            writer.println("*MA (Moto aquática), E/R (Esporte e Recreio), T/C (Transporte de Carga), T/P (Passageiros)");
+            PdfPTable totalTable = new PdfPTable(new float[]{3f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f});
+            totalTable.setWidthPercentage(100);
+            String[] headersTot = {"TOTAL", "MOTO-AQUÁTICA", "ESPORTE E RECREIO", "BALSA", "PASSAGEIROS", "TURISMO"};
+            for(String h : headersTot) {
+                totalTable.addCell(new PdfPCell(new Phrase(h, boldFont)));
+            }
+            totalTable.addCell(new PdfPCell(new Phrase("ABORDAGENS", boldFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(maAb), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(erAb), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tcAb), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tpAb), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(efAb), normalFont)));
+
+            totalTable.addCell(new PdfPCell(new Phrase("NOTIFICAÇÕES", boldFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(maNot), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(erNot), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tcNot), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tpNot), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(efNot), normalFont)));
+
+            totalTable.addCell(new PdfPCell(new Phrase("APREENSÕES", boldFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(maSei), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(erSei), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tcSei), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(tpSei), normalFont)));
+            totalTable.addCell(new PdfPCell(new Phrase(String.valueOf(efSei), normalFont)));
+            document.add(totalTable);
+
+            document.add(new Paragraph("\n05) MEIOS EMPREGADOS: VIATURA: " + this.vehicle + " | EMBARCAÇÃO: " + this.officialVessel, normalFont));
             
-            writer.println("\nTOTAL        | MOTO-AQUÁTICA | ESPORTE E RECREIO | BALSA | TRANSPORTE PASSAGEIROS | DISPOSITIVO");
-            writer.printf(Locale.US, "ABORDAGENS   | %-13d | %-17d | %-5d | %-22d | %-11d\n", maAb, erAb, tcAb, tpAb, efAb);
-            writer.printf(Locale.US, "NOTIFICAÇÕES | %-13d | %-17d | %-5d | %-22d | %-11d\n", maNot, erNot, tcNot, tpNot, efNot);
-            writer.printf(Locale.US, "APREENSÕES   | %-13d | %-17d | %-5d | %-22d | %-11d\n", maSei, erSei, tcSei, tpSei, efSei);
-
-            writer.println("\n05) MEIOS EMPREGADOS:");
-            writer.println("    VIATURA: " + this.vehicle + " | EMBARCAÇÃO: " + this.officialVessel);
-
-            writer.println("\n06) MILITARES RESPONSÁVEIS:");
+            StringBuilder militaryStr = new StringBuilder("06) MILITARES RESPONSÁVEIS:\n");
             for (Military m : militaryTeam) {
-                writer.println("    " + m.getOfficialIdentification());
+                militaryStr.append("    - ").append(m.getOfficialIdentification()).append("\n");
             }
+            document.add(new Paragraph(militaryStr.toString(), normalFont));
 
-            writer.println("\n07) MARINAS/RAMPAS E PÍER:\n    " + this.marinas);
-            writer.println("08) CONDIÇÕES METEOROLÓGICAS:\n    " + this.weather);
-            writer.println("09) OCORRÊNCIAS:\n    " + this.occurrences);
-            writer.println("10) OUTRAS IRREGULARIDADES:\n    " + this.irregularities);
-            writer.println("11) ACOMODAÇÕES:\n    " + this.accommodations);
-            writer.println("12) FACILIDADES PARA ACESSO:\n    " + this.accessFacilities);
-            writer.println("13) SUGESTÕES:\n    " + this.suggestions);
-            writer.println("14) OUTRAS OBSERVAÇÕES:\n    " + this.observations);
+            document.add(new Paragraph("07) MARINAS/RAMPAS E PÍER: " + this.marinas, normalFont));
+            document.add(new Paragraph("08) CONDIÇÕES METEOROLÓGICAS: " + this.weather, normalFont));
+            document.add(new Paragraph("09) OCORRÊNCIAS: " + this.occurrences, normalFont));
+            document.add(new Paragraph("10) OUTRAS IRREGULARIDADES: " + this.irregularities, normalFont));
+            document.add(new Paragraph("11) ACOMODAÇÕES: " + this.accommodations, normalFont));
+            document.add(new Paragraph("12) FACILIDADES PARA ACESSO: " + this.accessFacilities, normalFont));
+            document.add(new Paragraph("13) SUGESTÕES: " + this.suggestions, normalFont));
+            document.add(new Paragraph("14) OUTRAS OBSERVAÇÕES: " + this.observations, normalFont));
+            document.add(new Paragraph("15) CLG - Gasolina: " + (int)this.fuelGasoline + "lts. | Diesel: " + (int)this.fuelDiesel + "lts.", boldFont));
 
-            writer.println("\n15) CLG:");
-            writer.println("    Diesel: " + (int)this.fuelDiesel + "lts | Gasolina: " + (int)this.fuelGasoline + "lts");
-            
-            writer.println("\n-----------------------------------------------------------------------------------------");
-            writer.println("RUBENS IKEUTI                          | ANDRE RAIMUNDO DA SILVA");
-            writer.println("Capitão de Corveta                     | Primeiro-Tenente (AA)");
-            writer.println("Delegado                               | Encarregado da Divisão STA");
-            writer.println("\n" + this.seniorInspectorName);
-            writer.println(this.seniorInspectorRank);
-            writer.println("Inspetor Naval");
-            writer.println("=========================================================================================\n");
+            document.add(new Paragraph("\n\n----------------------------------------------------------------------------------------------------------------------------------", normalFont));
+            Paragraph ass = new Paragraph("RUBENS IKEUTI                         | ANDRE RAIMUNDO DA SILVA\nCapitão de Corveta                    | Primeiro-Tenente (AA)\nDelegado                              | Encarregado da Divisão STA\n\n" + this.seniorInspectorName.toUpperCase() + "\n" + this.seniorInspectorRank + "\nInspetor Naval", boldFont);
+            document.add(ass);
 
-            System.out.println("✅ Relatório oficial gerado e sobrescrito com sucesso!");
+            System.out.println("✅ PDF oficial estruturado com tabelas gerado com sucesso em: " + pdfFile.getAbsolutePath());
         } catch (Exception e) {
-            System.out.println("❌ Erro ao gerar o arquivo de relatório: " + e.getMessage());
+            System.out.println("❌ Erro ao gerar PDF: " + e.getMessage());
+            e.printStackTrace(); // Imprime o erro detalhado na consola para diagnóstico
+        } finally {
+            if (document.isOpen()) {
+                document.close();
+            }
         }
-        
+
+        // 2. Gerar Ficheiro Editável (CSV)
+        String csvFileName = "relatorio_editavel_" + dateStr + ".csv";
+        File csvFile = new File(basePath, csvFileName);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(csvFile))) {
+            bw.write("MARINHA DO BRASIL - DELEGACIA FLUVIAL DE FURNAS");
+            bw.newLine();
+            bw.write("Secao;Detalhe");
+            bw.newLine();
+            bw.write("01) Tarefa;Fiscalizacao do Trafego Aquaviario");
+            bw.newLine();
+            bw.write("02) Data;" + dateFormatted);
+            bw.newLine();
+            bw.write("05) Veiculo;" + this.vehicle);
+            bw.newLine();
+            bw.write("15) CLG;Gasolina: " + (int)this.fuelGasoline + "lts. Diesel: " + (int)this.fuelDiesel + "lts.");
+            System.out.println("✅ Ficheiro editável gerado com sucesso em: " + csvFile.getAbsolutePath());
+        } catch (IOException e) {
+            System.out.println("❌ Erro ao gerar CSV: " + e.getMessage());
+            e.printStackTrace(); // Imprime o erro detalhado do CSV se houver
+        }
+
+        // 3. Gerar Ficheiro de Texto (TXT) na raiz
+        String txtFileName = "relatorio_inspecao.txt";
+        File txtFile = new File(basePath, txtFileName);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(txtFile))) {
+            bw.write("MARINHA DO BRASIL - DELEGACIA FLUVIAL DE FURNAS\n");
+            bw.write("Relatorio gerado em: " + dateFormatted + "\n");
+            bw.write("Veiculo: " + this.vehicle + " | Embarcacao Oficial: " + this.officialVessel + "\n");
+            bw.write("Ocorrencias: " + this.occurrences + "\n");
+            System.out.println("✅ Ficheiro TXT gerado com sucesso em: " + txtFile.getAbsolutePath());
+        } catch (IOException e) {
+            System.out.println("❌ Erro ao gerar TXT: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         printOfficialReport();
     }
 
